@@ -10,11 +10,6 @@ import time
 from datetime import datetime
 
 
-__version__ = "0.0.2"
-__author__ = "Luís Gomes"
-__author_email__ = "luismsgomes@gmail.com"
-
-
 DB_PATH = os.environ.get("RUNSEQ_DB", "runseq.sqlite3")
 
 
