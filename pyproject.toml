@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "runseq"
+version = "0.0.3"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+authors = [
+  {name = "Luís Gomes", email = "luismsgomes@gmail.com" }
+]
+description = "Simple job manager to run jobs sequentially in a Linux machine."
+
+
+[project.urls]
+"Homepage" = "https://github.com/luismsgomes/runseq"
+
+[project.scripts]
+runseq = "runseq:main"
+
+
