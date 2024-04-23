@@ -140,7 +140,7 @@ def main():
     elif args.action in ["list", "ls"]:
         list_jobs()
     elif args.action in ["remove", "rm"]:
-        remove_job(args.jobid)
+        remove_job(args.job_id)
     else:
         print("invalid action:", args.action, file=sys.stderr)
         sys.exit(2)
