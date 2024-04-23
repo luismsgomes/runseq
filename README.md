@@ -4,8 +4,8 @@
 
 This simple command line tool was created to solve a problem similar to the ones described here:
 
-    - https://stackoverflow.com/questions/72365506/how-to-change-a-sequence-of-bash-commands-while-running
-    - https://stackoverflow.com/questions/70946428/what-is-the-simplest-queue-job-manager-for-linux
+- https://stackoverflow.com/questions/72365506/how-to-change-a-sequence-of-bash-commands-while-running
+- https://stackoverflow.com/questions/70946428/what-is-the-simplest-queue-job-manager-for-linux
 
 Specifically, I wanted a way to execute long processing jobs sequentially and be able to modify the queue of upcomming jobs while a job was running.
 
