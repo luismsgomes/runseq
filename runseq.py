@@ -83,7 +83,7 @@ def remove_job(job_id):
 
 
 def list_jobs():
-    sql = "SELECT id, priority, submitted, command FROM jobs ORDER BY -priority"
+    sql = "SELECT id, priority, submitted, command FROM jobs ORDER BY -priority, id"
     with db_connect() as con:
         for job_id, priority, submitted, command in con.execute(sql):
             print(
