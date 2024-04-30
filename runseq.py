@@ -7,27 +7,43 @@ import subprocess
 import sys
 import time
 
-from datetime import datetime
 
-
-DB_PATH = os.environ.get("RUNSEQ_DB", "runseq.sqlite3")
+DB_PATH = os.environ.get("RUNSEQ_DB", "runseqv0.2.sqlite3")
 
 
 def db_connect():
     con = sqlite3.connect(DB_PATH)
     con.execute(
         "CREATE TABLE IF NOT EXISTS jobs("
-        "id INTEGER PRIMARY KEY, "
+        "job_id INTEGER PRIMARY KEY, "
+        "status TEXT "
+        "CHECK(status IN ('running','queued','finished')) "
+        "NOT NULL DEFAULT 'queued', "
         "priority INTEGER, "
-        "submitted VARCHAR(64), "
-        "command VARCHAR(1024)"
+        "submitted TEXT NOT NULL, "
+        "started TEXT DEFAULT NULL, "
+        "finished TEXT DEFAULT NULL, "
+        "returncode INTEGER DEFAULT NULL,"
+        "command TEXT NOT NULL"
         ")"
     )
     return con
 
 
-def run_job(job_id, priority, submitted, command):
-    started = datetime.now()
+def run_job(job_id):
+    with db_connect() as con:
+        sql = (
+            "UPDATE jobs "
+            "SET status = 'running', started = datetime('now') "
+            "WHERE job_id = ? LIMIT 1"
+        )
+        con.execute(sql, (job_id,))
+        sql = (
+            "SELECT priority, submitted, started, command "
+            "FROM jobs "
+            "WHERE job_id = ? LIMIT 1"
+        )
+        priority, submitted, started, command = con.execute(sql, (job_id,)).fetchone()
     print(
         "### starting job #########################",
         "##      job id: %d" % job_id,
@@ -40,7 +56,15 @@ def run_job(job_id, priority, submitted, command):
         flush=True,
     )
     proc = subprocess.run(command, shell=True)
-    finished = datetime.now()
+    with db_connect() as con:
+        sql = (
+            "UPDATE jobs "
+            "SET status = 'finished', finished = datetime('now'), returncode = ? "
+            "WHERE job_id = ? LIMIT 1"
+        )
+        con.execute(sql, (proc.returncode, job_id))
+        sql = "SELECT finished FROM jobs WHERE job_id = ? LIMIT 1"
+        finished = con.execute(sql, (job_id,)).fetchone()[0]
     print(
         "### finished job #########################",
         "##      job id: %d" % job_id,
@@ -58,43 +82,61 @@ def run_job(job_id, priority, submitted, command):
 
 
 def run_jobs():
-    sql = "SELECT id, priority, submitted, command FROM jobs ORDER BY -priority LIMIT 1"
+    sql = (
+        "SELECT job_id "
+        "FROM jobs "
+        "WHERE status = 'queued' "
+        "ORDER BY -priority LIMIT 1"
+    )
     with db_connect() as con:
         while True:
-            for job_id, priority, submitted, command in con.execute(sql):
-                remove_job(job_id)
-                run_job(job_id, priority, submitted, command)
-                break  # fetch next job
+            for (job_id,) in con.execute(sql):
+                run_job(job_id)
+                break  # rerun SQL to fetch next job
             else:
                 time.sleep(10)  # queue was empty; wait before retrying
 
 
 def add_job(priority, command):
+    sql = (
+        "INSERT INTO jobs (priority, submitted, command) "
+        "VALUES (?, datetime('now'), ?)"
+    )
+
     with db_connect() as con:
-        con.execute(
-            "INSERT INTO jobs (priority, submitted, command) VALUES (?, ?, ?)",
-            (priority, datetime.now(), command),
-        )
+        con.execute(sql, (priority, command))
 
 
 def remove_job(job_id):
     with db_connect() as con:
-        con.execute("DELETE FROM jobs WHERE id=? LIMIT 1", (job_id,))
+        con.execute("DELETE FROM jobs WHERE job_id=? LIMIT 1", (job_id,))
+
+
+def clear_finished_jobs():
+    with db_connect() as con:
+        con.execute("DELETE FROM jobs WHERE status = 'finished'")
 
 
 def list_jobs():
-    sql = "SELECT id, priority, submitted, command FROM jobs ORDER BY -priority, id"
+    columns = [
+        "job_id",
+        "status",
+        "priority",
+        "submitted",
+        "started",
+        "finished",
+        "returncode",
+        "command",
+    ]
+    sql = (
+        "SELECT " + ", ".join(columns) + " FROM jobs "
+        "ORDER BY status, -priority, submitted"
+    )
     with db_connect() as con:
-        for job_id, priority, submitted, command in con.execute(sql):
+        for line in con.execute(sql):
+            line = ["n/a" if value is None else value for value in line]
             print(
-                "id:",
-                job_id,
-                "priority:",
-                priority,
-                "submitted: ",
-                submitted,
-                "command:",
-                command,
+                *["%s: %s" % key_value for key_value in zip(columns, line)], sep=" | "
             )
 
 
@@ -122,6 +164,10 @@ def parse_commandline():
         "remove", aliases=["rm"], help="remove a job from the queue"
     )
     parser_rm.add_argument("job_id", type=int, help="the id of the job to be removed")
+    parser_clear = subparsers.add_parser(
+        "clear", aliases=["cl"], help="remove all finished jobs from the queue"
+    )
+    parser_clear.add_argument("job_id", type=int, help="the id of the job to be removed")
     return parser.parse_args()
 
 
