@@ -86,7 +86,7 @@ def run_jobs():
         "SELECT job_id "
         "FROM jobs "
         "WHERE status = 'queued' "
-        "ORDER BY -priority LIMIT 1"
+        "ORDER BY -priority, submitted LIMIT 1"
     )
     with db_connect() as con:
         while True:
@@ -130,7 +130,11 @@ def list_jobs():
     ]
     sql = (
         "SELECT " + ", ".join(columns) + " FROM jobs "
-        "ORDER BY status, -priority, submitted"
+        "ORDER BY CASE "
+        "WHEN status = 'finished' THEN 0 "
+        "WHEN status = 'running' THEN 1 "
+        "WHEN status = 'queued' THEN 2 "
+        "END, -priority, submitted"
     )
     with db_connect() as con:
         for line in con.execute(sql):
