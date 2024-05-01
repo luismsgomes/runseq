@@ -14,8 +14,7 @@ Specifically, I wanted a way to execute long processing jobs sequentially and be
 Using `--help` will show the tool usage:
 
 
-    runseq --help
-    usage: runseq [-h] {run,add,list,ls,remove,rm} ...
+    usage: runseq [-h] {run,add,list,ls,remove,rm,clear,cl} ...
 
     runs jobs sequentially
 
@@ -25,11 +24,12 @@ Using `--help` will show the tool usage:
     actions:
     valid actions
 
-    {run,add,list,ls,remove,rm}
+    {run,add,list,ls,remove,rm,clear,cl}
         run                 run jobs as they appear on queue; this command does not return
         add                 add a job to the queue
         list (ls)           list jobs in the queue
         remove (rm)         remove a job from the queue
+        clear (cl)          remove all finished jobs from the queue
 
 
 To use this tool, a *job runner* process must be started with the command `run`.
