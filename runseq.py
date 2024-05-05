@@ -168,10 +168,9 @@ def parse_commandline():
         "remove", aliases=["rm"], help="remove a job from the queue"
     )
     parser_rm.add_argument("job_id", type=int, help="the id of the job to be removed")
-    parser_clear = subparsers.add_parser(
+    parser_clear = subparsers.add_parser(  # noqa: F841
         "clear", aliases=["cl"], help="remove all finished jobs from the queue"
     )
-    parser_clear.add_argument("job_id", type=int, help="the id of the job to be removed")
     return parser.parse_args()
 
 
@@ -186,6 +185,8 @@ def main():
         list_jobs()
     elif args.action in ["remove", "rm"]:
         remove_job(args.job_id)
+    elif args.action in ["clear", "cl"]:
+        clear_finished_jobs()
     else:
         print("invalid action:", args.action, file=sys.stderr)
         sys.exit(2)
